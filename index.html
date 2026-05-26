@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chau Consulting Firm — Project Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#F2EEE4; --paper:#FBFAF5; --ink:#26231E; --muted:#6E685D; --line:#E3DCCB;
+    --grid:rgba(38,35,30,.045);
+    --amber:#DD8A26; --slate:#3E6E8E; --teal:#1F8A7A; --clay:#C0573A; --olive:#7C8A41; --plum:#6A5A86; --sand:#9A9182;
+    --shadow:0 1px 2px rgba(38,35,30,.05),0 8px 24px rgba(38,35,30,.06);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background-color:var(--bg);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:30px 30px;
+    color:var(--ink); font-family:"IBM Plex Sans",sans-serif; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1240px; margin:0 auto; padding:32px 24px 56px}
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;
+    border-left:5px solid var(--amber); padding:6px 0 14px 18px; margin-bottom:26px}
+  .brand{font-family:"Sora",sans-serif; font-weight:700; font-size:30px; letter-spacing:-.02em; margin:0}
+  .sub{color:var(--muted); font-size:14px; margin-top:4px}
+  .badge{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    background:var(--ink); color:var(--paper); padding:6px 11px; border-radius:999px}
+  .badge.live{background:var(--teal)}
+
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(186px,1fr)); gap:16px; margin-bottom:22px}
+  .kpi{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px 18px 16px; box-shadow:var(--shadow);
+    opacity:0; transform:translateY(10px); animation:rise .5s ease forwards}
+  .kpi .lab{font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:7px}
+  .kpi .dot{width:8px;height:8px;border-radius:2px}
+  .kpi .val{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:30px; letter-spacing:-.02em; margin-top:8px}
+  .kpi .note{font-size:12px; color:var(--muted); margin-top:2px}
+  @keyframes rise{to{opacity:1; transform:none}}
+
+  .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:16px}
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:var(--shadow);
+    opacity:0; transform:translateY(10px); animation:rise .5s ease forwards}
+  .card h3{font-family:"Sora",sans-serif; font-weight:600; font-size:15px; margin:0 0 2px}
+  .card .cap{font-size:12px; color:var(--muted); margin:0 0 12px}
+  .span12{grid-column:span 12} .span8{grid-column:span 8} .span6{grid-column:span 6}
+  .span5{grid-column:span 5} .span4{grid-column:span 4} .span7{grid-column:span 7}
+  .cv{position:relative; height:260px} .cv.tall{height:300px}
+  @media(max-width:900px){.span8,.span6,.span5,.span4,.span7{grid-column:span 12}}
+
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th{text-align:left; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--muted); padding:8px 10px; border-bottom:2px solid var(--line)}
+  td{padding:9px 10px; border-bottom:1px solid var(--line)}
+  tbody tr:hover{background:rgba(221,138,38,.06)}
+  .num{font-family:"IBM Plex Mono",monospace; text-align:right}
+  .pill{font-size:11px; font-weight:500; padding:3px 9px; border-radius:999px; white-space:nowrap}
+  .scroll{max-height:360px; overflow:auto}
+  footer{margin-top:26px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:14px}
+  code{font-family:"IBM Plex Mono",monospace; background:#EBE6D9; padding:2px 6px; border-radius:5px; font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 class="brand">Chau Consulting Firm</h1>
+      <div class="sub" id="sub">Project portfolio dashboard</div>
+    </div>
+    <div class="badge" id="srcBadge">Sample data</div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card span8"><h3>Revenue over time</h3><p class="cap">Consulting fees by project start month</p><div class="cv tall"><canvas id="cTime"></canvas></div></div>
+    <div class="card span4"><h3>Projects by status</h3><p class="cap">Current pipeline</p><div class="cv tall"><canvas id="cStatus"></canvas></div></div>
+
+    <div class="card span4"><h3>Revenue by project type</h3><p class="cap">Total fees ($)</p><div class="cv"><canvas id="cType"></canvas></div></div>
+    <div class="card span4"><h3>Revenue by county</h3><p class="cap">Total fees ($)</p><div class="cv"><canvas id="cCounty"></canvas></div></div>
+    <div class="card span4"><h3>Projects by service</h3><p class="cap">Count by service line</p><div class="cv"><canvas id="cService"></canvas></div></div>
+
+    <div class="card span7"><h3>Estimate accuracy</h3><p class="cap">Estimated vs actual cost, completed projects. Dashed line is a perfect estimate</p><div class="cv tall"><canvas id="cScatter"></canvas></div></div>
+    <div class="card span5"><h3>Project list</h3><p class="cap" id="tblCap">All projects</p><div class="scroll"><table><thead><tr><th>Project</th><th>Type</th><th>Status</th><th class="num">Fee</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ========================================================================
+   HOW TO CONNECT YOUR GOOGLE SHEET
+   1. Put your data in a Google Sheet (the columns from the sample CSV).
+   2. Set SHEET_ID below to the long id in the sheet URL:
+      docs.google.com/spreadsheets/d/<SHEET_ID>/edit
+   3. Set SHEET_NAME to the tab name (default Sheet1).
+   4. Make the sheet readable (Share > anyone with the link can view,
+      or File > Publish to the web). Reload. Done.
+   Leave SHEET_ID as is to preview with the built-in sample data.
+   ======================================================================== */
+const SHEET_ID = "1KJvBsGDFP20HJURpIq3QpYP-6y9KfC12FV0RCp4Nm0A";
+const SHEET_NAME = "";   // leave blank to use the first tab, or type the tab name
+
+const PALETTE = ["#DD8A26","#3E6E8E","#1F8A7A","#C0573A","#7C8A41","#6A5A86","#9A9182"];
+const STATUS_COLOR = {"Completed":"#1F8A7A","In Progress":"#DD8A26","Bidding":"#3E6E8E","On Hold":"#C0573A"};
+const INK="#26231E", MUTED="#6E685D", LINE="#E3DCCB";
+
+Chart.defaults.font.family="'IBM Plex Sans',sans-serif";
+Chart.defaults.font.size=12;
+Chart.defaults.color=MUTED;
+Chart.defaults.plugins.legend.labels.boxWidth=12;
+Chart.defaults.plugins.legend.labels.boxHeight=12;
+Chart.defaults.plugins.legend.labels.usePointStyle=true;
+Chart.defaults.plugins.legend.labels.padding=14;
+
+const n=v=>{const x=Number(v);return isFinite(x)?x:0;};
+const money=v=>{v=n(v);if(v>=1e6)return "$"+(v/1e6).toFixed(2)+"M";if(v>=1e3)return "$"+(v/1e3).toFixed(0)+"k";return "$"+v;};
+const moneyFull=v=>"$"+n(v).toLocaleString("en-US");
+function ym(v){
+  if(v===null||v===undefined||v==="")return null;
+  if(typeof v==="string"){
+    if(v.startsWith("Date(")){const p=v.slice(5,-1).split(",").map(Number);return p[0]+"-"+String(p[1]+1).padStart(2,"0");}
+    return v.slice(0,7);
+  }
+  if(v instanceof Date)return v.getFullYear()+"-"+String(v.getMonth()+1).padStart(2,"0");
+  return null;
+}
+function monthsBetween(a,b){
+  const out=[];let[y,m]=a.split("-").map(Number);const[ey,em]=b.split("-").map(Number);
+  while(y<ey||(y===ey&&m<=em)){out.push(y+"-"+String(m).padStart(2,"0"));m++;if(m>12){m=1;y++;}}
+  return out;
+}
+function groupSum(data,key,val){const o={};data.forEach(d=>{const k=d[key]||"Other";o[k]=(o[k]||0)+n(d[val]);});return o;}
+function groupCount(data,key){const o={};data.forEach(d=>{const k=d[key]||"Other";o[k]=(o[k]||0)+1;});return o;}
+function sortedEntries(o){return Object.entries(o).sort((a,b)=>b[1]-a[1]);}
+
+async function loadData(){
+  const sheetParam=SHEET_NAME?("&sheet="+encodeURIComponent(SHEET_NAME)):"";
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1${sheetParam}`;
+  const txt=await (await fetch(url)).text();
+  const j=JSON.parse(txt.substring(txt.indexOf("(")+1,txt.lastIndexOf(")")));
+  const cols=j.table.cols.map(c=>(c.label||c.id||"").trim());
+  const rows=j.table.rows.map(r=>{const o={};r.c.forEach((c,i)=>{o[cols[i]]=c?c.v:"";});return o;}).filter(o=>o.project_name||o.project_id);
+  return {rows,live:true};
+}
+
+function kpiCard(lab,val,note,color){
+  return `<div class="kpi"><div class="lab"><span class="dot" style="background:${color}"></span>${lab}</div>
+    <div class="val" data-target="${val.raw}" data-fmt="${val.fmt}">${val.fmt0}</div><div class="note">${note}</div></div>`;
+}
+function countUp(){
+  document.querySelectorAll(".kpi .val").forEach(el=>{
+    const t=Number(el.dataset.target),fmt=el.dataset.fmt;const dur=900;const t0=performance.now();
+    function step(now){const p=Math.min(1,(now-t0)/dur);const v=t*(1-Math.pow(1-p,3));
+      el.textContent=render(v,fmt);if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  });
+}
+function render(v,fmt){
+  if(fmt==="money")return money(v);
+  if(fmt==="pct")return Math.round(v)+"%";
+  if(fmt==="sat")return v.toFixed(1);
+  if(fmt==="sqft")return Math.round(v).toLocaleString("en-US");
+  return Math.round(v).toString();
+}
+
+function build(data){
+  const live=data.live, rows=data.rows;
+  document.getElementById("srcBadge").textContent=live?"Live data":"Sample data";
+  if(live)document.getElementById("srcBadge").classList.add("live");
+
+  // KPIs
+  const total=rows.length;
+  const rev=rows.reduce((s,d)=>s+n(d.fee),0);
+  const onTime=rows.filter(d=>n(d.schedule_variance_days)<=0).length;
+  const onPct=total?onTime/total*100:0;
+  const sats=rows.map(d=>n(d.satisfaction)).filter(x=>x>0);
+  const avgSat=sats.length?sats.reduce((a,b)=>a+b,0)/sats.length:0;
+  const sqft=rows.reduce((s,d)=>s+n(d.square_feet),0);
+  document.getElementById("kpis").innerHTML=
+    kpiCard("Total projects",{raw:total,fmt:"int",fmt0:"0"},"in portfolio","#26231E")+
+    kpiCard("Fee revenue",{raw:rev,fmt:"money",fmt0:"$0"},"total consulting fees","#DD8A26")+
+    kpiCard("On-time rate",{raw:onPct,fmt:"pct",fmt0:"0%"},"delivered on or ahead","#1F8A7A")+
+    kpiCard("Avg satisfaction",{raw:avgSat,fmt:"sat",fmt0:"0.0"},"out of 5.0","#3E6E8E")+
+    kpiCard("Total area",{raw:sqft,fmt:"sqft",fmt0:"0"},"square feet managed","#6A5A86");
+  document.querySelectorAll(".kpi,.card").forEach((el,i)=>el.style.animationDelay=(i*0.05)+"s");
+  countUp();
+
+  const tip={callbacks:{}};
+
+  // Revenue over time (continuous months)
+  const monthly={};rows.forEach(d=>{const k=ym(d.start_date);if(k)monthly[k]=(monthly[k]||0)+n(d.fee);});
+  const keys=Object.keys(monthly).sort();
+  const labels=keys.length?monthsBetween(keys[0],keys[keys.length-1]):[];
+  const vals=labels.map(k=>monthly[k]||0);
+  const ctxT=document.getElementById("cTime");const g=ctxT.getContext("2d").createLinearGradient(0,0,0,300);
+  g.addColorStop(0,"rgba(221,138,38,.32)");g.addColorStop(1,"rgba(221,138,38,0)");
+  new Chart(ctxT,{type:"line",data:{labels:labels.map(l=>{const[y,m]=l.split("-");return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]+" '"+y.slice(2);}),
+    datasets:[{data:vals,borderColor:"#DD8A26",backgroundColor:g,fill:true,tension:.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:"#DD8A26"}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+moneyFull(c.parsed.y)}}},
+      scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:10}},y:{grid:{color:LINE},ticks:{callback:v=>money(v)}}}}});
+
+  // Status doughnut
+  const st=groupCount(rows,"status");const stk=Object.keys(st);
+  new Chart(document.getElementById("cStatus"),{type:"doughnut",
+    data:{labels:stk,datasets:[{data:stk.map(k=>st[k]),backgroundColor:stk.map(k=>STATUS_COLOR[k]||"#9A9182"),borderColor:"#FBFAF5",borderWidth:3}]},
+    options:{maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom"}}}});
+
+  // Revenue by type
+  const ty=sortedEntries(groupSum(rows,"project_type","fee"));
+  new Chart(document.getElementById("cType"),{type:"bar",
+    data:{labels:ty.map(e=>e[0]),datasets:[{data:ty.map(e=>e[1]),backgroundColor:"#3E6E8E",borderRadius:5,maxBarThickness:34}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+moneyFull(c.parsed.y)}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:LINE},ticks:{callback:v=>money(v)}}}}});
+
+  // Revenue by county (horizontal)
+  const co=sortedEntries(groupSum(rows,"county","fee"));
+  new Chart(document.getElementById("cCounty"),{type:"bar",
+    data:{labels:co.map(e=>e[0]),datasets:[{data:co.map(e=>e[1]),backgroundColor:"#1F8A7A",borderRadius:5,maxBarThickness:34}]},
+    options:{indexAxis:"y",maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+moneyFull(c.parsed.x)}}},
+      scales:{y:{grid:{display:false}},x:{grid:{color:LINE},ticks:{callback:v=>money(v)}}}}});
+
+  // Service polar
+  const sv=sortedEntries(groupCount(rows,"service"));
+  new Chart(document.getElementById("cService"),{type:"polarArea",
+    data:{labels:sv.map(e=>e[0]),datasets:[{data:sv.map(e=>e[1]),backgroundColor:sv.map((e,i)=>PALETTE[i%PALETTE.length]+"cc"),borderColor:"#FBFAF5",borderWidth:2}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:11}}}},scales:{r:{grid:{color:LINE},ticks:{display:false}}}}});
+
+  // Scatter estimated vs actual
+  const comp=rows.filter(d=>d.status==="Completed"&&n(d.actual_cost)>0);
+  const pts=comp.map(d=>({x:n(d.estimated_cost),y:n(d.actual_cost),name:d.project_name}));
+  const allv=pts.flatMap(p=>[p.x,p.y]);const mn=Math.min(...allv,0),mx=Math.max(...allv,1);
+  new Chart(document.getElementById("cScatter"),{type:"scatter",
+    data:{datasets:[
+      {label:"Perfect estimate",type:"line",data:[{x:mn,y:mn},{x:mx,y:mx}],borderColor:"#9A9182",borderDash:[6,6],borderWidth:1.5,pointRadius:0,fill:false},
+      {label:"Completed projects",data:pts,backgroundColor:"#C0573A",pointRadius:6,pointHoverRadius:8,borderColor:"#FBFAF5",borderWidth:1.5}
+    ]},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:"bottom"},
+      tooltip:{callbacks:{label:c=>c.raw.name?[c.raw.name,"Est "+moneyFull(c.raw.x),"Actual "+moneyFull(c.raw.y)]:""}}},
+      scales:{x:{title:{display:true,text:"Estimated cost"},grid:{color:LINE},ticks:{callback:v=>money(v)}},
+              y:{title:{display:true,text:"Actual cost"},grid:{color:LINE},ticks:{callback:v=>money(v)}}}}});
+
+  // Table
+  const tb=document.getElementById("tbody");
+  rows.slice().sort((a,b)=>n(b.fee)-n(a.fee)).forEach(d=>{
+    const c=STATUS_COLOR[d.status]||"#9A9182";
+    tb.innerHTML+=`<tr><td>${d.project_name||""}<div style="color:var(--muted);font-size:11px">${d.county||""}</div></td>
+      <td>${d.project_type||""}</td>
+      <td><span class="pill" style="background:${c}1f;color:${c}">${d.status||""}</span></td>
+      <td class="num">${moneyFull(d.fee)}</td></tr>`;
+  });
+  document.getElementById("tblCap").textContent=total+" projects, sorted by fee";
+
+  // Footer + subtitle
+  const yrs=keys.length?(keys[0].slice(0,4)+" to "+keys[keys.length-1].slice(0,4)):"";
+  document.getElementById("sub").textContent="Project portfolio dashboard  ·  "+total+" projects  ·  "+yrs;
+  document.getElementById("foot").innerHTML=live
+    ? "Live data from your Google Sheet. Reloads on refresh."
+    : "Showing built-in sample data. To go live, set <code>SHEET_ID</code> and <code>SHEET_NAME</code> at the top of the script and share the sheet as viewable.";
+}
+
+function showError(e){
+  console.error(e);
+  const b=document.getElementById("srcBadge");b.textContent="Connection error";b.style.background="#C0573A";
+  document.querySelector(".grid").style.opacity=".25";
+  document.getElementById("foot").innerHTML="Could not read the Google Sheet. Open the sheet, set sharing to <code>Anyone with the link &middot; Viewer</code> (or File &gt; Publish to the web), and make sure the header row matches the sample columns. Then reload this page.";
+}
+loadData().then(build).catch(showError);
+</script>
+</body>
+</html>
